@@ -94,13 +94,13 @@ for path in args['path']:
 
         measures = [{} for _ in range(10)]
 
-        if not args.non_optimized:
+        if not args['non_optimized']:
             # TODO: normalize Y_all_hat ???
             similar_indices = nn_vec_basic(Y_all_hat, w2v.syn0norm, topn=10, sort=True, return_sims=False, nthreads=8)
             similar_words = [[w2v.index2word[ind] for ind in row] for row in similar_indices]
 
         for i, (hyponym, hypernym) in enumerate(subsumptions_test):
-            if args.non_optimized:
+            if args['non_optimized']:
                 Y_hat  = Y_all_hat[i].reshape(X_all_test.shape[1],)
                 actual = [w for w, _ in w2v.most_similar(positive=[Y_hat], topn=10)]
             else:
