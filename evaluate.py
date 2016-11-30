@@ -95,9 +95,10 @@ for path in args['path']:
         measures = [{} for _ in range(10)]
 
         if not args['non_optimized']:
-            # TODO: normalize Y_all_hat ???
+            # normalize Y_all_hat to make dot product equeal to cosine and monotonically decreasing function of euclidean distance
+            Y_all_hat_norm = Y_all_hat / np.linalg.norm(Y_all_hat,axis=1)[:,np.newaxis]
             print('nn_vec...')
-            similar_indices = nn_vec(Y_all_hat, w2v.syn0norm, topn=10, sort=True, return_sims=False, nthreads=8, verbose=False)
+            similar_indices = nn_vec(Y_all_hat_norm, w2v.syn0norm, topn=10, sort=True, return_sims=False, nthreads=8, verbose=False)
             print('nn_vec results covert...')
             similar_words = [[w2v.index2word[ind] for ind in row] for row in similar_indices]
             print('done')
