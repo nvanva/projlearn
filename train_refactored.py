@@ -91,7 +91,7 @@ def train(sess, train_op, model, data, callback=lambda: None, train_writer=None,
             res = sess.run([model.loss, model.summary], feed_dict=feed_dict_train)
             train_losses.append(res[0])
             train_writer.add_summary(res[1], epoch)
-            res = sess.run(model.loss, feed_dict=feed_dict_test)
+            res = sess.run([model.loss, model.summary], feed_dict=feed_dict_test)
             test_losses.append(res[0])
             test_writer.add_summary(res[1], epoch)
 
