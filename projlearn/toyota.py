@@ -12,12 +12,11 @@ class Toyota:
 
         # Inputs and vars
         x_vec_ph = tf.placeholder(embs_type, [None, embs_dim], name='x_vec_ph')
-        y_vec_ph = tf.placeholder(embs_type, [None, embs_dim], name='y_vec_ph')
         y_ind_ph = tf.placeholder(tf.int32, [None], name='y_ind_ph')
 
         x = x_vec_ph  # n x dim #TODO: add x_ind placeholder and use EmbeddingsLookup(y_ind) instead of placeholder?
-        y = y_vec_ph  # n x dim #TODO: use EmbeddingsLookup(y_ind) instead of placeholder?
         y_ind = y_ind_ph  # n
+        y = tf.nn.embedding_lookup(self.embs_var, y_ind, name='y_embs_lookup')
 
         # Predict hypernym vector from hyponym vector
         with tf.name_scope('xW'):
@@ -73,8 +72,7 @@ class Toyota:
         # Summaries
         self.merged = tf.summary.merge_all()
         self.X = x_vec_ph
-        self.Y = y_vec_ph
-        self.Y_ind = y_ind_ph
+        self.Y = y_ind_ph
         self.Z = tf.placeholder(tf.float32, shape=[None, embs_dim], name='Z') # not used, for compatibility
 
         self.Y_hat = y_hat
