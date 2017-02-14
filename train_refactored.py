@@ -134,29 +134,23 @@ def main(_):
             dfs[part] = df
 
         # get embeddings for hyponym and hypernym
-        X_all_train = embs[dfs['train']['hypo_ind']]
-        Y_all_train = embs[dfs['train']['hyper_ind']]
-        X_all_test = embs[dfs['test']['hypo_ind']]
-        Y_all_test = embs[dfs['test']['hyper_ind']]
-
         Y_ind_train = np.array(dfs['train']['hyper_ind'])
         Y_ind_test = np.array(dfs['test']['hyper_ind'])
 
 
 
-    else:
-        with np.load(FLAGS.train) as npz:
-            X_index_train = npz['X_index']
-            Y_all_train   = npz['Y_all']
-            Z_all_train   = npz['Z_all']
+    with np.load(FLAGS.train) as npz:
+        X_index_train = npz['X_index']
+        Y_all_train   = npz['Y_all']
+        Z_all_train   = npz['Z_all']
 
-        with np.load(FLAGS.test) as npz:
-            X_index_test  = npz['X_index']
-            Y_all_test    = npz['Y_all']
-            Z_all_test    = npz['Z_all']
+    with np.load(FLAGS.test) as npz:
+        X_index_test  = npz['X_index']
+        Y_all_test    = npz['Y_all']
+        Z_all_test    = npz['Z_all']
 
-        X_all_train = Z_all_train[X_index_train[:, 0], :]
-        X_all_test  = Z_all_test[X_index_test[:, 0],   :]
+    X_all_train = Z_all_train[X_index_train[:, 0], :]
+    X_all_test  = Z_all_test[X_index_test[:, 0],   :]
 
     kmeans = pickle.load(open('kmeans.pickle', 'rb'))
 
@@ -197,7 +191,7 @@ def main(_):
         for cluster in range(kmeans.n_clusters):
             if FLAGS.model == 'toyota':
                 # data = Data_toyota(cluster, dfs['train'], dfs['test'])
-                data = Data_toyota(
+                data = Data(
                     cluster, clusters_train, clusters_test,
                     X_index_train, Y_ind_train, Z_all_train,
                     X_index_test, Y_ind_test,  Z_all_test
