@@ -16,6 +16,45 @@ class Data:
         self.X_train, self.Y_train, self.Z_train = self.fetch(self.subsumptions_train, self.X_index_train, self.Y_all_train, self.Z_all_train)
         self.X_test,  self.Y_test,  self.Z_test  = self.fetch(self.subsumptions_test,  self.X_index_test,  self.Y_all_test,  self.Z_all_test)
 
+
+    def train_shuffle(self):
+        subsumptions = self.subsumptions_train[:]
+        random.shuffle(subsumptions)
+        return self.fetch(subsumptions, self.X_index_train, self.Y_all_train, self.Z_all_train)
+
+    def fetch(self, subsumptions, X_index, Y_all, Z_all):
+        X = Z_all[X_index[subsumptions, 0]]
+        Y = Y_all[subsumptions]
+        Z = self.sample_Z(subsumptions, X_index, Z_all)
+        assert X.shape == Y.shape == Z.shape
+        return (X, Y, Z)
+
+    def sample_Z(self, subsumptions, X_index, Z_all):
+        indices = [random.choice(range(X_index[i][0], X_index[i][0] + X_index[i][1])) for i in subsumptions]
+        assert len(indices) == len(subsumptions)
+        return Z_all[indices]
+
+
+
+class Data_toyota:
+    def __init__(self, cluster, df_train, df_test):
+        self.cluster = cluster
+
+        df = df_train[df_train.cluster == cluster]
+        self.X_train = np.array(df.hypo_ind)
+        self.Y_train = np.array(df.hyper_ind)
+
+        df = df_test[df_test.cluster == cluster]
+        self.X_test = np.array(df.hypo_ind)
+        self.Y_test = np.array(df.hyper_ind)
+
+        self.X_index_train, self.Y_all_train, self.Z_all_train = X_index_train, Y_all_train, Z_all_train
+        self.X_index_test,  self.Y_all_test,  self.Z_all_test  = X_index_test,  Y_all_test,  Z_all_test
+
+        self.X_train, self.Y_train, self.Z_train = self.fetch(self.subsumptions_train, self.X_index_train, self.Y_all_train, self.Z_all_train)
+        self.X_test,  self.Y_test,  self.Z_test  = self.fetch(self.subsumptions_test,  self.X_index_test,  self.Y_all_test,  self.Z_all_test)
+
+
     def train_shuffle(self):
         subsumptions = self.subsumptions_train[:]
         random.shuffle(subsumptions)
