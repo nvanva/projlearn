@@ -43,8 +43,11 @@ def train(sess, train_op, model, data, callback=lambda: None):
     train_losses, test_losses = [], []
     train_times = []
 
-    init_op = tf.initialize_all_variables()
-    sess.run(init_op)
+    # Init all vars except embs_var
+    init_vars = tf.global_variables()
+    if FLAGS.model=='toyota':
+        init_vars.remove(model.embs_var)
+    sess.run(sess.run(tf.variables_initializer(init_vars)))
 
     feed_dict_train, feed_dict_test = {
         model.X: data.X_train,
