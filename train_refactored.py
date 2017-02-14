@@ -47,7 +47,7 @@ def train(sess, train_op, model, data, callback=lambda: None):
     init_vars = tf.global_variables()
     if FLAGS.model=='toyota':
         init_vars.remove(model.embs_var)
-    sess.run(sess.run(tf.variables_initializer(init_vars)))
+    sess.run(tf.variables_initializer(init_vars))
 
     feed_dict_train, feed_dict_test = {
         model.X: data.X_train,
