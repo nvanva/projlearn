@@ -38,8 +38,7 @@ MODELS = {
     'toyota': Toyota
 }
 
-def train(sess, train_op, model, data, callback=lambda: None):
-
+def train(sess, train_op, model, data, callback=lambda: None, train_writer=None, test_writer=None):
     train_losses, test_losses = [], []
     train_times = []
 
@@ -89,8 +88,12 @@ def train(sess, train_op, model, data, callback=lambda: None):
             train_times.append(t_last - t_this)
 
         if (epoch + 1) % 10 == 0 or (epoch == 0):
-            train_losses.append(sess.run(model.loss, feed_dict=feed_dict_train))
-            test_losses.append(sess.run(model.loss,  feed_dict=feed_dict_test))
+            res = sess.run([model.loss, model.summary], feed_dict=feed_dict_train)
+            train_losses.append(res[0])
+            train_writer.add_summary(res[1], epoch)
+            res = sess.run(model.loss, feed_dict=feed_dict_test)
+            test_losses.append(res[0])
+            test_writer.add_summary(res[1], epoch)
 
             print('Cluster %d: epoch = %05d, train loss = %f, test loss = %f.' % (
                 data.cluster + 1,
@@ -188,10 +191,16 @@ def main(_):
     # train_op = tf.train.AdamOptimizer(epsilon=1.).minimize(model.loss)
 
     with tf.Session(config=config) as sess:
+        from datetime import datetime
+        t = datetime.now().replace(microsecond=0)
+
         if FLAGS.model == 'toyota':
             model.load_w2v(embs, sess)
 
         for cluster in range(kmeans.n_clusters):
+            train_writer = tf.summary.FileWriter('./tf_train_logs1/%s-cl%d-train' % (t, cluster), sess.graph)
+            test_writer = tf.summary.FileWriter('./tf_train_logs1/%s-cl%d-test' % (t, cluster), sess.graph)
+
             if FLAGS.model == 'toyota':
                 # data = Data_toyota(cluster, dfs['train'], dfs['test'])
                 data = Data(
@@ -209,7 +218,8 @@ def main(_):
 
             saver = tf.train.Saver()
             saver_path = '%s.k%d.trained' % (FLAGS.model, cluster + 1)
-            Y_hat_test[str(cluster)] = train(sess, train_op, model, data, callback=lambda sess: saver.save(sess, saver_path))
+            Y_hat_test[str(cluster)] = train(sess, train_op, model, data, callback=lambda sess: saver.save(sess, saver_path),
+                                             train_writer=train_writer, test_writer=test_writer)
             print('Writing the output model to "%s".' % saver_path, flush=True)
 
     test_path = '%s.test.npz' % FLAGS.model
