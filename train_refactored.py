@@ -134,8 +134,8 @@ def main(_):
             dfs[part] = df
 
         # get embeddings for hyponym and hypernym
-        Y_ind_train = np.array(dfs['train']['hyper_ind'])
-        Y_ind_test = np.array(dfs['test']['hyper_ind'])
+        Y_ind_train = np.array(dfs['train']['hyper_ind'])[:,np.newaxis]
+        Y_ind_test = np.array(dfs['test']['hyper_ind'])[:, np.newaxis]
 
 
 
