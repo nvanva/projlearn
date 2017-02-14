@@ -12,10 +12,10 @@ class Toyota:
 
         # Inputs and vars
         x_vec_ph = tf.placeholder(embs_type, [None, embs_dim], name='x_vec_ph')
-        y_ind_ph = tf.placeholder(tf.int32, [None], name='y_ind_ph')
+        y_ind_ph = tf.placeholder(tf.int32, [None, 1], name='y_ind_ph')
 
         x = x_vec_ph  # n x dim #TODO: add x_ind placeholder and use EmbeddingsLookup(y_ind) instead of placeholder?
-        y_ind = y_ind_ph  # n
+        y_ind = y_ind_ph[:,0]  # n
         y = tf.nn.embedding_lookup(self.embs_var, y_ind, name='y_embs_lookup')
 
         # Predict hypernym vector from hyponym vector
