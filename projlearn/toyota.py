@@ -70,7 +70,7 @@ class Toyota:
             tf.summary.scalar('acc_2', acc_2)
 
         # Summaries
-        self.merged = tf.summary.merge_all()
+        self.summary = tf.summary.merge_all()
         self.X = x_vec_ph
         self.Y = y_ind_ph
         self.Z = tf.placeholder(tf.float32, shape=[None, embs_dim], name='Z') # not used, for compatibility
