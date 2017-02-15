@@ -187,7 +187,7 @@ def main(_):
     # Training
     with tf.name_scope('Training'):
         global_step = tf.Variable(tf.constant(0, tf.int32))
-        train_op = tf.train.AdamOptimizer(epsilon=1.).minimize(model.loss, global_step)
+        train_op = tf.train.AdamOptimizer().minimize(model.loss, global_step)
     # train_op = tf.train.AdamOptimizer(epsilon=1.).minimize(model.loss)
 
     with tf.Session(config=config) as sess:
