@@ -5,7 +5,7 @@ class Toyota:
     A simple baseline that estimates the projection matrix W
     given the vectors X and Y without any constraints.
     """
-    def __init__(self, embs_type, embs_shape, w_stddev, **kwargs):
+    def __init__(self, embs_type, embs_shape, w_stddev, lambdac, kneg, **kwargs):
         embs_dim = embs_shape[1]
 
         self.init_embs_subgraph(embs_type, embs_shape)
@@ -33,7 +33,7 @@ class Toyota:
             dot = tf.matmul(y_hat, self.embs_var, transpose_b=True)  # n x V
 
         with tf.name_scope('negative_ind'):
-            top_k_vals, top_k_inds = tf.nn.top_k(dot, k=2, sorted=True)  # n x 2
+            top_k_vals, top_k_inds = tf.nn.top_k(dot, k=kneg, sorted=True)  # n x 2
             print(top_k_vals.get_shape())
             # takes all top_k y' which are not equal to true y
             # TODO: try also taking only first y' not equal to true y
@@ -46,19 +46,22 @@ class Toyota:
         # Loss
         with tf.name_scope('loss'):
             with tf.name_scope('pos_loss'):
-                pos_loss = tf.nn.sigmoid_cross_entropy_with_logits(pos_logit,
-                                                                   tf.constant(1, dtype=tf.float32, shape=[1]))
+                pos_loss = tf.nn.sigmoid_cross_entropy_with_logits(logits=pos_logit,
+                                                                   labels=tf.constant(1, dtype=tf.float32, shape=[1]))
             with tf.name_scope('neg_loss'):
-                neg_loss = tf.nn.sigmoid_cross_entropy_with_logits(neg_logit,
-                                                                   tf.constant(0, dtype=tf.float32, shape=[1]))
-            loss = tf.reduce_mean(pos_loss + neg_loss)
+                neg_loss = tf.nn.sigmoid_cross_entropy_with_logits(logits=neg_logit,
+                                                                   labels=tf.constant(0, dtype=tf.float32, shape=[1]))
+            loss = tf.reduce_mean(pos_loss + lambdac*neg_loss)
         print(pos_loss.get_shape(), neg_loss.get_shape(), loss.get_shape())
 
         # Evaluation
         with tf.name_scope('evaluation'):
             tf.summary.histogram('W', W)
+            tf.summary.histogram('y_hat_norm', tf.norm(y_hat, axis=1))
             tf.summary.histogram('neg_logit', neg_logit)
             tf.summary.histogram('pos_logit', pos_logit)
+            tf.summary.histogram('pos_minus_neg_logit', pos_logit-neg_logit)
+            tf.summary.histogram('pos_div_logit', pos_logit/neg_logit)
             tf.summary.scalar('avg_neg_logit', tf.reduce_mean(neg_logit))
             tf.summary.scalar('avg_pos_logit', tf.reduce_mean(pos_logit))
             tf.summary.scalar('avg_neg_LOSS', tf.reduce_mean(neg_loss))
