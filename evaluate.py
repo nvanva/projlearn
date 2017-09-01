@@ -4,10 +4,11 @@ import argparse
 import csv
 import glob
 import os
+import codecs
 import pickle
 import re
 import sys
-from gensim.models.word2vec import Word2Vec
+import gensim
 from collections import defaultdict
 import numpy as np
 
@@ -28,9 +29,6 @@ if not len(sys.argv) > 1:
 
 WD = os.path.dirname(os.path.realpath(__file__))
 
-w2v = Word2Vec.load_word2vec_format(os.path.join(WD, args['w2v']), binary=True, unicode_errors='ignore')
-w2v.init_sims(replace=True)
-
 with np.load(args['test']) as npz:
     X_index_test  = npz['X_index']
     Y_all_test    = npz['Y_all']
@@ -40,13 +38,16 @@ X_all_test  = Z_all_test[X_index_test[:, 0],   :]
 
 subsumptions_test = []
 
-with open(args['subsumptions']) as f:
+with codecs.open(args['subsumptions'],'r', encoding='utf-8') as f:
     reader = csv.reader(f, delimiter='\t', quoting=csv.QUOTE_NONE)
 
     for row in reader:
         subsumptions_test.append((row[0], row[1]))
 
 assert len(subsumptions_test) == X_all_test.shape[0]
+w2v = gensim.models.KeyedVectors.load_word2vec_format(os.path.join(WD, args['w2v']), binary=True, unicode_errors='ignore')
+w2v.init_sims(replace=True)
+
 
 def extract(clusters, Y_hat_clusters):
     cluster_indices = {cluster: 0 for cluster in Y_hat_clusters}

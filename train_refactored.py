@@ -13,7 +13,6 @@ from projlearn.toyota import Toyota
 from projlearn.data import Data_toyota
 import pandas as pd
 import gensim
-
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 
@@ -22,6 +21,7 @@ flags.DEFINE_string( 'train', 'train.npz', 'Training set.')
 flags.DEFINE_string( 'test',   'test.npz', 'Test set.')
 flags.DEFINE_float(  'stddev',        .01, 'Value of stddev for matrix initialization.')
 flags.DEFINE_float(  'lambdac',       .10, 'Value of lambda.')
+flags.DEFINE_float(  'kneg',       2, 'Number of negative examples for toyota regularization.')
 flags.DEFINE_integer('seed',          228, 'Random seed.')
 flags.DEFINE_integer('num_epochs',    300, 'Number of training epochs.')
 flags.DEFINE_integer('batch_size',   2048, 'Batch size.')
@@ -60,7 +60,7 @@ def train(sess, train_op, model, data, callback=lambda: None, train_writer=None,
 
     steps = max(data.Y_train.shape[0] // FLAGS.batch_size, 1)
 
-    print('Cluster %d: %d train items and %d test items available; using %d steps of %d items.' % (
+    print(datetime.datetime.now().isoformat(), 'Cluster %d: %d train items and %d test items available; using %d steps of %d items.' % (
         data.cluster + 1,
         data.X_train.shape[0],
         data.X_test.shape[0],
@@ -94,8 +94,9 @@ def train(sess, train_op, model, data, callback=lambda: None, train_writer=None,
             res = sess.run([model.loss, model.summary], feed_dict=feed_dict_test)
             test_losses.append(res[0])
             test_writer.add_summary(res[1], epoch)
-
-            print('Cluster %d: epoch = %05d, train loss = %f, test loss = %f.' % (
+            train_writer.flush()
+            test_writer.flush()
+            print(datetime.datetime.now().isoformat(), 'Cluster %d: epoch = %05d, train loss = %f, test loss = %f.' % (
                 data.cluster + 1,
                 epoch + 1,
                 train_losses[-1] / data.X_train.shape[0],
@@ -122,8 +123,8 @@ def main(_):
         embs_type = 'float32'
         # Load word embeddings from W2V file in vectors of tensor_type dtype
         print('Loading w2v model from ', FLAGS.w2v)
-        w2v = gensim.models.Word2Vec.load_word2vec_format(FLAGS.w2v, binary=True, unicode_errors='ignore', datatype=embs_type)
-        print('Loaded.')
+        w2v = gensim.models.KeyedVectors.load_word2vec_format(FLAGS.w2v, binary=not FLAGS.w2v.endswith('txt'), unicode_errors='ignore', datatype=embs_type)
+        print('Loaded w2v mode:', w2v.syn0.shape)
         w2v.init_sims(replace=True)
         embs = w2v.syn0norm
 
@@ -134,10 +135,13 @@ def main(_):
             df = pd.read_csv(f, sep='\t', names=['hypo', 'hyper'])
             # Convert words to indices
             for col in df.columns:
-                df[col + '_ind'] = df[col].apply(lambda x: w2v.vocab[x].index)
-
-            print(f, len(df))
-            dfs[part] = df
+                df[col + '_ind'] = df[col].apply(lambda x: w2v.vocab[x].index if x in w2v.vocab else None)
+		
+            dff = df
+            for col in df.columns:
+                dff = dff[~dff[col].isnull()]
+            print(f, '%d/%d examples left after filtering oov-words' % (len(dff), len(df)))
+            dfs[part] = dff
 
         # get embeddings for hyponym and hypernym
         Y_ind_train = np.array(dfs['train']['hyper_ind'])[:,np.newaxis]
@@ -168,7 +172,7 @@ def main(_):
         dfs['test']['cluster'] = clusters_test
 
     if FLAGS.model == 'toyota':
-        model = Toyota(embs_type, embs.shape,  w_stddev=FLAGS.stddev)
+        model = Toyota(embs_type, embs.shape,  w_stddev=FLAGS.stddev, lambdac=FLAGS.lambdac, kneg=FLAGS.kneg)
     else:
         model = MODELS[FLAGS.model](x_size=Z_all_train.shape[1], y_size=Y_all_train.shape[1], w_stddev=FLAGS.stddev,
                                     lambda_=FLAGS.lambdac)
@@ -191,15 +195,14 @@ def main(_):
     # train_op = tf.train.AdamOptimizer(epsilon=1.).minimize(model.loss)
 
     with tf.Session(config=config) as sess:
-        from datetime import datetime
-        t = datetime.now().replace(microsecond=0)
+        t = datetime.datetime.now().replace(microsecond=0)
 
         if FLAGS.model == 'toyota':
             model.load_w2v(embs, sess)
 
         for cluster in range(kmeans.n_clusters):
-            train_writer = tf.summary.FileWriter('./tf_train_logs1/%s-cl%d-train' % (t, cluster), sess.graph)
-            test_writer = tf.summary.FileWriter('./tf_train_logs1/%s-cl%d-test' % (t, cluster), sess.graph)
+            train_writer = tf.summary.FileWriter('./tf_train_logs1/%s-ncl%d-%s-%.3f-cl%d-train' % (t, kmeans.n_clusters, FLAGS.model, FLAGS.lambdac, cluster), sess.graph)
+            test_writer = tf.summary.FileWriter('./tf_train_logs1/%s-ncl%d-%s-%.3f-cl%d-test' % (t, kmeans.n_clusters,FLAGS.model, FLAGS.lambdac, cluster), sess.graph)
 
             if FLAGS.model == 'toyota':
                 # data = Data_toyota(cluster, dfs['train'], dfs['test'])

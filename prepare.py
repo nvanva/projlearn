@@ -3,8 +3,9 @@
 import argparse
 import csv
 import random
-from gensim.models.word2vec import Word2Vec
+import gensim
 from collections import defaultdict
+import codecs
 import numpy as np
 try:
     from sklearn.model_selection import train_test_split
@@ -19,14 +20,10 @@ args = vars(parser.parse_args())
 RANDOM_SEED = args['seed']
 random.seed(RANDOM_SEED)
 
-w2v = Word2Vec.load_word2vec_format(args['w2v'], binary=True, unicode_errors='ignore')
-w2v.init_sims(replace=True)
-print('Using %d word2vec dimensions from "%s".' % (w2v.layer1_size, args['w2v']))
-
 def read_subsumptions(filename):
     subsumptions = []
 
-    with open(filename) as f:
+    with codecs.open(filename,'r',encoding='utf-8') as f:
         reader = csv.reader(f, delimiter='\t', quoting=csv.QUOTE_NONE)
 
         for row in reader:
@@ -37,7 +34,7 @@ def read_subsumptions(filename):
 def read_synonyms(filename):
     synonyms = defaultdict(lambda: list())
 
-    with open(filename) as f:
+    with codecs.open(filename,'r',encoding='utf-8') as f:
         reader = csv.reader(f, delimiter='\t', quoting=csv.QUOTE_NONE)
 
         for row in reader:
@@ -50,6 +47,12 @@ subsumptions_train      = read_subsumptions('subsumptions-train.txt')
 subsumptions_validation = read_subsumptions('subsumptions-validation.txt')
 subsumptions_test       = read_subsumptions('subsumptions-test.txt')
 synonyms                = read_synonyms('synonyms.txt')
+print(len(subsumptions_train), len(subsumptions_validation), len(subsumptions_test),len(synonyms))
+w2v = gensim.models.KeyedVectors.load_word2vec_format(args['w2v'], binary=not args['w2v'].endswith('txt'), unicode_errors='ignore')
+w2v.init_sims(replace=True)
+print('Using word2vec model with %d-dim vectors for %d words from "%s".' % (w2v.syn0.shape[1], w2v.syn0.shape[0], args['w2v']))
+
+
 
 def compute_XZ(subsumptions):
     X_index, Z_all = [], []

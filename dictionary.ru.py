@@ -7,6 +7,7 @@ from gensim.models.word2vec import Word2Vec
 from collections import defaultdict
 import numpy as np
 from sklearn.cross_validation import train_test_split
+import  gensim.models
 
 parser = argparse.ArgumentParser(description='Russian Dictionary.')
 parser.add_argument('--w2v',  default='all.norm-sz100-w10-cb0-it1-min100.w2v', nargs='?', help='Path to the word2vec model.')
@@ -16,7 +17,7 @@ args = vars(parser.parse_args())
 RANDOM_SEED = args['seed']
 random.seed(RANDOM_SEED)
 
-w2v = Word2Vec.load_word2vec_format(args['w2v'], binary=True, unicode_errors='ignore')
+w2v = gensim.models.KeyedVectors.load_word2vec_format(args['w2v'], binary=True, unicode_errors='ignore')
 w2v.init_sims(replace=True)
 print('Using %d word2vec dimensions from "%s".' % (w2v.layer1_size, args['w2v']))
 
